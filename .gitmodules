@@ -1,0 +1,3 @@
+[submodule "ubdl"]
+	path = ubdl
+	url = https://github.com/larbys/ubdl
