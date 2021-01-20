@@ -1,3 +1,6 @@
 [submodule "ubdl"]
 	path = ubdl
 	url = https://github.com/larbys/ubdl
+[submodule "LArTPC-VQVAE"]
+	path = LArTPC-VQVAE
+	url = https://github.com/NuTufts/LArTPC-VQVAE.git
