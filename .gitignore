@@ -1,5 +1,6 @@
-<<<<<<< HEAD
 *.root
-=======
+*.simg
+*.png
+*.jpeg
 *~
->>>>>>> 9bb0ac7aa2ed2a026438a59e0bf2924478da3fe4
+

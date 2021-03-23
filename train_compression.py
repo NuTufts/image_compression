@@ -22,7 +22,10 @@ from compressor import encode, decode, images_as_tensor_blocks, images_as_tensor
 def train(config): 
 
     batch_size = config['vqvae_batch_size']
-    directory = '/image_compression/data/model_data/jpeg/'
+
+    base_directory = ''
+    base_directory = '/cluster/tufts/wongjiradlab/jhwang11'
+    directory = base_directory + '/image_compression/data/model_data/jpeg/'
     data_dir = pathlib.Path(directory)
     image_count = len(list(data_dir.glob('*/*.jpeg')))
     print(image_count)
@@ -63,7 +66,7 @@ def train(config):
     # print(ds_test[0].shape)
 
     import random
-    directory = '/image_compression/results/originals/originals_png/'
+    directory = base_directory+'/image_compression/results/originals/originals_png/'
     train_split = 0.8
     total_images = []
     for i, file in enumerate(os.listdir(directory)): # read back in those saved images
@@ -94,10 +97,10 @@ def train(config):
     print(history.history['val_loss'])
 
     # vqvae_codebook = get_vqvae_codebook()
-    # to_compress = images_as_tensor_blocks("/image_compression/results/originals/originals_png/")
-    # encode(encoder, to_compress, '/image_compression/results/codes/codes_npz.npz',k=config['k'], verbose=True)
-    # # encode(encoder, to_compress, '/image_compression/results/codes/codes_npz.jpeg')
-    # decode(decoder, vqvae_codebook, '/image_compression/results/codes/codes_npz.npz', code_sampler=codes_sampler, save="/image_compression/results/reproduced/reproduced/", verbose=True)
+    # to_compress = images_as_tensor_blocks(base_directory+"/image_compression/results/originals/originals_png/")
+    # encode(encoder, to_compress, base_directory+'/image_compression/results/codes/codes_npz.npz',k=config['k'], verbose=True)
+    # # encode(encoder, to_compress, base_directory+'/image_compression/results/codes/codes_npz.jpeg')
+    # decode(decoder, vqvae_codebook, base_directory+'/image_compression/results/codes/codes_npz.npz', code_sampler=codes_sampler, save=base_directory+"/image_compression/results/reproduced/reproduced/", verbose=True)
 
     print('Fin')
 

@@ -22,10 +22,12 @@ from stitcher import *
 import copy
 import random
 
+base_directory = ''
+base_directory = '/cluster/tufts/wongjiradlab/jhwang11'
 
 config = {'model': 'res', 'checkpoint': '',
           'MNIST': False, 'save_root': '/train_save',
-          'dataset': 256, 'sample_size': 8, 'gpu': 2, 
+          'dataset': 256, 'sample_size': 8, 'gpu': 0, 
           'multi_gpu': False, 'shuffle': True, 
           'drop_last': False, 'num_workers': 8, 
           'k': 512, 'd': 64, 'beta': 1.0, 
@@ -41,7 +43,7 @@ configProt = ConfigProto()
 configProt.gpu_options.allow_growth = True
 session = InteractiveSession(config=configProt)
 
-directory = '/image_compression/results/originals/originals_png/'
+directory = base_directory + '/image_compression/results/originals/originals_png/'
 train_split = 0.8
 total_images = []
 for i, file in enumerate(os.listdir(directory)): # read back in those saved images
@@ -78,11 +80,11 @@ def train_and_decode(config, save=None, vqvae_compare=True, return_images=False)
                         validation_data=(ds_test, ds_test), verbose=2)
 
     vqvae_codebook = get_vqvae_codebook()
-    encode_image_files(encoder, [file for file, i in test_files], '/image_compression/results/codes/codes_npz.npz', verbose=True)
+    encode_image_files(encoder, [file for file, i in test_files], base_directory+'/image_compression/results/codes/codes_npz.npz', verbose=True)
     if save is None:
-        decoded_imgs = decode(decoder, vqvae_codebook, '/image_compression/results/codes/codes_npz.npz', code_sampler=codes_sampler, verbose=True)
+        decoded_imgs = decode(decoder, vqvae_codebook, base_directory+'/image_compression/results/codes/codes_npz.npz', code_sampler=codes_sampler, verbose=True)
     else:
-        decoded_imgs = decode(decoder, vqvae_codebook, '/image_compression/results/codes/codes_npz.npz', code_sampler=codes_sampler, verbose=True,
+        decoded_imgs = decode(decoder, vqvae_codebook, base_directory+'/image_compression/results/codes/codes_npz.npz', code_sampler=codes_sampler, verbose=True,
                               save=save)
 
     mseloss = mse_images(stitch_nblocks_1d(np.reshape(ds_test, [-1, 256, 256]), 1008, 3456), decoded_imgs)
@@ -146,8 +148,8 @@ def difference_images(original, reproduced, save=''):
 
 # compare vqvae vs trad
 from PIL import Image
-output_directory = '/image_compression/results/comparison/standard_compression/'
-originals_directory = '/image_compression/results/comparison/originals/'
+output_directory = base_directory+'/image_compression/results/comparison/standard_compression/'
+originals_directory = base_directory+'/image_compression/results/comparison/originals/'
 
 mse_trad_orig = 0
 compressed_images = None
@@ -168,13 +170,13 @@ for i, file in enumerate([file for file, i in test_files]):
     mse_trad_orig += ((compressed - orig)**2).mean()
 mse_trad_orig = mse_trad_orig / len(test_files)
 
-mse_vqvae_orig, decoded_imgs = train_and_decode(config, save='/image_compression/results/comparison/vqvae_compression/', vqvae_compare=True, return_images=True)
+mse_vqvae_orig, decoded_imgs = train_and_decode(config, save=base_directory+'/image_compression/results/comparison/vqvae_compression/', vqvae_compare=True, return_images=True)
 print(curr_best)
 print(f"VQVAE MSE: {mse_vqvae_orig}, Trad compression MSE: {mse_trad_orig}")
 
-standard_compression_diff = difference_images(originals, compressed_images, save='/image_compression/results/comparison/standard_differences/') # save diff images
-vqvae_compression_diff = difference_images(originals, np.reshape(decoded_imgs, originals.shape), save='/image_compression/results/comparison/vqvae_differences/') # save vqvae diff images
-difference_images(compressed_images, np.reshape(decoded_imgs, originals.shape), save='/image_compression/results/comparison/standard_vqvae_differences/') # save difference between vqvae and standard compression images
+standard_compression_diff = difference_images(originals, compressed_images, save=base_directory+'/image_compression/results/comparison/standard_differences/') # save diff images
+vqvae_compression_diff = difference_images(originals, np.reshape(decoded_imgs, originals.shape), save=base_directory+'/image_compression/results/comparison/vqvae_differences/') # save vqvae diff images
+difference_images(compressed_images, np.reshape(decoded_imgs, originals.shape), save=base_directory+'/image_compression/results/comparison/standard_vqvae_differences/') # save difference between vqvae and standard compression images
 
 
 
@@ -227,6 +229,6 @@ def overlay(originals, reproduced, color, save=''):
             save_img(f"{save}diff_overlay_{i+1}.jpeg", img, data_format='channels_last')
 
 
-overlay(originals, standard_compression_diff, 'green', save='/image_compression/results/comparison/standard_differences/overlay/')
-overlay(originals, vqvae_compression_diff, 'green', save='/image_compression/results/comparison/vqvae_differences/overlay/')
+overlay(originals, standard_compression_diff, 'green', save=base_directory+'/image_compression/results/comparison/standard_differences/overlay/')
+overlay(originals, vqvae_compression_diff, 'green', save=base_directory+'/image_compression/results/comparison/vqvae_differences/overlay/')
 '''

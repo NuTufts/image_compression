@@ -125,6 +125,7 @@ def main():
         if file.endswith(".root"):
             files.append(os.path.join(args.input_directory, file))
 
+    files = files[:50]
     # convert_and_save(files, args.output_directory, block_size=args.block_size)
     extract_root_to_jpg(files, args.output_directory)
 
