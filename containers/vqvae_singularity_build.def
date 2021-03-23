@@ -1,0 +1,9 @@
+Bootstrap: docker
+From: tensorflow/tensorflow:latest-gpu
+
+%post 
+    apt-get update
+    apt-get install -y vim
+    python3 -m pip install tfds-nightly
+    python3 -m pip install tensorflow-probability
+    python3 -m pip install Pillow
