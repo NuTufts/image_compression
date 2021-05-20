@@ -4,8 +4,8 @@ import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras import backend as K
 import tensorflow_datasets as tfds
-import datasets.larcv
 from tensorflow.keras.preprocessing.image import load_img, img_to_array, array_to_img, save_img
+from datetime import datetime
 
 import pathlib
 sys.path.append('LArTPC-VQVAE/')
@@ -23,15 +23,15 @@ import copy
 import random
 
 base_directory = ''
-base_directory = '/cluster/tufts/wongjiradlab/jhwang11'
+# base_directory = '/cluster/tufts/wongjiradlab/jhwang11'
 
 config = {'model': 'res', 'checkpoint': '',
           'MNIST': False, 'save_root': '/train_save',
           'dataset': 256, 'sample_size': 8, 'gpu': 0, 
           'multi_gpu': False, 'shuffle': True, 
           'drop_last': False, 'num_workers': 8, 
-          'k': 512, 'd': 64, 'beta': 1.0, 
-          'vqvae_batch_size': 15, 'vqvae_epochs': 50, 
+          'k': 256, 'd': 32, 'beta': 1.0, 
+          'vqvae_batch_size': 15, 'vqvae_epochs': 32, 
           'vqvae_lr': 0.0003, 'vqvae_layers': [32, 64], 
           'pcnn_batch_size': 256, 'pcnn_epochs': 15, 
           'pcnn_lr': 0.001, 'pcnn_blocks': 3, 
@@ -49,9 +49,9 @@ total_images = []
 for i, file in enumerate(os.listdir(directory)): # read back in those saved images
     if file.endswith('.png'):
         total_images.append((directory + file, i))
-random.shuffle(total_images)
+    if i == 200: break
 
-total_images = total_images[:int(len(total_images)*0.5)]
+random.shuffle(total_images)
 
 train_files = total_images[:int(len(total_images)*train_split)]
 test_files = total_images[int(len(total_images)*train_split):]
@@ -71,21 +71,23 @@ def mse_images(original, reproduced):
     # print(mse)
     return np.array(list(map(lambda x: ((x[0] - x[1])**2).mean(), zip(original, reproduced)))).mean()
 
-def train_and_decode(config, save=None, vqvae_compare=True, return_images=False):
+def train_and_decode(config, save=None, vqvae_compare=True, return_images=False, save_model=None):
     vqvae, vqvae_sampler, encoder, decoder, codes_sampler, get_vqvae_codebook = build_vqvae(config)
     vqvae.summary()
     
     history = vqvae.fit(x=ds_train, y=ds_train, epochs=config['vqvae_epochs'], 
                         batch_size=config['vqvae_batch_size'],#  verbose=2) 
                         validation_data=(ds_test, ds_test), verbose=2)
+    if save_model:
+        vqvae.save(save_model+datetime.now().strftime('%m-%d-%Y-%H:%M')+'.vqvae')
 
     vqvae_codebook = get_vqvae_codebook()
     encode_image_files(encoder, [file for file, i in test_files], base_directory+'/image_compression/results/codes/codes_npz.npz', verbose=True)
-    if save is None:
-        decoded_imgs = decode(decoder, vqvae_codebook, base_directory+'/image_compression/results/codes/codes_npz.npz', code_sampler=codes_sampler, verbose=True)
-    else:
-        decoded_imgs = decode(decoder, vqvae_codebook, base_directory+'/image_compression/results/codes/codes_npz.npz', code_sampler=codes_sampler, verbose=True,
-                              save=save)
+    decoded_imgs = decode(decoder, vqvae_codebook, base_directory+'/image_compression/results/codes/codes_npz.npz', code_sampler=codes_sampler,
+                                        verbose=True, save=save if save is not None else False)
+    
+    # save for ssnet
+    np.save('/image_compression/results/vqvae_imgs.npy', decoded_imgs)
 
     mseloss = mse_images(stitch_nblocks_1d(np.reshape(ds_test, [-1, 256, 256]), 1008, 3456), decoded_imgs)
 
@@ -151,6 +153,10 @@ from PIL import Image
 output_directory = base_directory+'/image_compression/results/comparison/standard_compression/'
 originals_directory = base_directory+'/image_compression/results/comparison/originals/'
 
+mse_vqvae_orig, decoded_imgs = train_and_decode(config, save=base_directory+'/image_compression/results/comparison/vqvae_compression/', \
+                                                 vqvae_compare=True, return_images=True, save_model='/image_compression/models/')
+
+
 mse_trad_orig = 0
 compressed_images = None
 originals = None
@@ -168,9 +174,12 @@ for i, file in enumerate([file for file, i in test_files]):
         compressed_images = np.append(compressed_images, np.reshape(compressed, (1, compressed.shape[0], compressed.shape[1], 1)), axis=0)
         originals = np.append(originals, np.reshape(orig, (1, orig.shape[0], orig.shape[1], 1)), axis=0)
     mse_trad_orig += ((compressed - orig)**2).mean()
+
+# save for ssnet
+np.save('/image_compression/results/originals.npy', originals)
+
 mse_trad_orig = mse_trad_orig / len(test_files)
 
-mse_vqvae_orig, decoded_imgs = train_and_decode(config, save=base_directory+'/image_compression/results/comparison/vqvae_compression/', vqvae_compare=True, return_images=True)
 print(curr_best)
 print(f"VQVAE MSE: {mse_vqvae_orig}, Trad compression MSE: {mse_trad_orig}")
 

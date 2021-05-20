@@ -8,7 +8,7 @@ import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras.preprocessing.image import load_img, save_img, img_to_array
 from tensorflow.keras import backend as K
-import tensorflow_datasets as tfds
+#import tensorflow_datasets as tfds
 import pathlib
 
 

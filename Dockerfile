@@ -1,4 +1,6 @@
 FROM tensorflow/tensorflow:latest-gpu
+# FROM tensorflow/tensorflow:devel-gpu
+
 RUN apt-get update
 RUN apt-get install -y vim
 RUN python3 -m pip install tfds-nightly
